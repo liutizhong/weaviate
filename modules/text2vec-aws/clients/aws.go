@@ -405,6 +405,7 @@ func extractHostAndPath(endpointUrl string) (string, string, error) {
 }
 
 func createRequestBody(model string, texts []string, operation operationType) (interface{}, error) {
+	model = "cohere.embed-multilingual-v3"
 	modelParts := strings.Split(model, ".")
 	if len(modelParts) == 0 {
 		return nil, fmt.Errorf("invalid model: %s", model)
