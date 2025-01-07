@@ -95,7 +95,7 @@ import (
 	modsum "github.com/weaviate/weaviate/modules/sum-transformers"
 	modspellcheck "github.com/weaviate/weaviate/modules/text-spellcheck"
 	modtext2colbertjinaai "github.com/weaviate/weaviate/modules/text2colbert-jinaai"
-	modtext2vecaws "github.com/weaviate/weaviate/modules/text2vec-aws"
+	modtext2vecaws "github.com/liutizhong/weaviate/modules/text2vec-aws"
 	modt2vbigram "github.com/weaviate/weaviate/modules/text2vec-bigram"
 	modcohere "github.com/weaviate/weaviate/modules/text2vec-cohere"
 	modcontextionary "github.com/weaviate/weaviate/modules/text2vec-contextionary"
