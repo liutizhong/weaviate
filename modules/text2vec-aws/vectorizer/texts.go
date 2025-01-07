@@ -27,9 +27,9 @@ func (v *Vectorizer) Texts(ctx context.Context, inputs []string,
 	vectors := make([][]float32, len(inputs))
 	for i := range inputs {
 		res, err := v.client.VectorizeQuery(ctx, []string{inputs[i]}, ent.VectorizationConfig{
-			Service:       settings.Service(),
-			Region:        settings.Region(),
-			Model:         settings.Model(),
+			Service:       "bedrock", //settings.Service(),
+			Region:        "us-east-1",//settings.Region(),
+			Model:         "cohere.embed-multilingual-v3",//settings.Model(),
 			Endpoint:      settings.Endpoint(),
 			TargetModel:   settings.TargetModel(),
 			TargetVariant: settings.TargetVariant(),
