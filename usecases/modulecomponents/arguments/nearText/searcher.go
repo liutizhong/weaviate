@@ -16,23 +16,23 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
-	"github.com/liutizhong/weaviate/entities/modulecapabilities"
-	"github.com/liutizhong/weaviate/entities/moduletools"
-	"github.com/liutizhong/weaviate/entities/schema/crossref"
-	"github.com/liutizhong/weaviate/entities/types"
-	libvectorizer "github.com/liutizhong/weaviate/usecases/vectorizer"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/modulecapabilities"
+	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/weaviate/weaviate/entities/schema/crossref"
+	libvectorizer "github.com/weaviate/weaviate/usecases/vectorizer"
 )
 
-type Searcher[T types.Embedding] struct {
+type Searcher[T dto.Embedding] struct {
 	vectorizer vectorizer[T]
 	movements  *movements[T]
 }
 
-func NewSearcher[T types.Embedding](vectorizer vectorizer[T]) *Searcher[T] {
+func NewSearcher[T dto.Embedding](vectorizer vectorizer[T]) *Searcher[T] {
 	return &Searcher[T]{vectorizer, newMovements[T]()}
 }
 
-type vectorizer[T types.Embedding] interface {
+type vectorizer[T dto.Embedding] interface {
 	Texts(ctx context.Context, input []string, cfg moduletools.ClassConfig) (T, error)
 }
 
@@ -42,7 +42,7 @@ func (s *Searcher[T]) VectorSearches() map[string]modulecapabilities.VectorForPa
 	return vectorSearches
 }
 
-type vectorForParams[T types.Embedding] struct {
+type vectorForParams[T dto.Embedding] struct {
 	vectorizer vectorizer[T]
 	movements  *movements[T]
 }

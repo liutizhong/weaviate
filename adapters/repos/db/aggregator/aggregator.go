@@ -17,21 +17,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/liutizhong/weaviate/adapters/repos/db/helpers"
-	"github.com/liutizhong/weaviate/adapters/repos/db/inverted"
-	"github.com/liutizhong/weaviate/adapters/repos/db/inverted/stopwords"
-	"github.com/liutizhong/weaviate/adapters/repos/db/lsmkv"
-	"github.com/liutizhong/weaviate/adapters/repos/db/roaringset"
-	"github.com/liutizhong/weaviate/entities/aggregation"
-	"github.com/liutizhong/weaviate/entities/schema"
-	"github.com/liutizhong/weaviate/usecases/modules"
-	schemaUC "github.com/liutizhong/weaviate/usecases/schema"
+	"github.com/weaviate/weaviate/adapters/repos/db/helpers"
+	"github.com/weaviate/weaviate/adapters/repos/db/inverted"
+	"github.com/weaviate/weaviate/adapters/repos/db/inverted/stopwords"
+	"github.com/weaviate/weaviate/adapters/repos/db/lsmkv"
+	"github.com/weaviate/weaviate/adapters/repos/db/roaringset"
+	"github.com/weaviate/weaviate/entities/aggregation"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/schema"
+	"github.com/weaviate/weaviate/usecases/modules"
+	schemaUC "github.com/weaviate/weaviate/usecases/schema"
 )
 
 type vectorIndex interface {
 	SearchByVectorDistance(ctx context.Context, vector []float32, targetDistance float32, maxLimit int64,
 		allowList helpers.AllowList) ([]uint64, []float32, error)
 	SearchByVector(ctx context.Context, vector []float32, k int, allowList helpers.AllowList) ([]uint64, []float32, error)
+	SearchByMultiVectorDistance(ctx context.Context, vector [][]float32, targetDistance float32,
+		maxLimit int64, allowList helpers.AllowList) ([]uint64, []float32, error)
+	SearchByMultiVector(ctx context.Context, vector [][]float32, k int, allow helpers.AllowList) ([]uint64, []float32, error)
 }
 
 type Aggregator struct {
@@ -88,7 +92,12 @@ func (a *Aggregator) Do(ctx context.Context) (*aggregation.Result, error) {
 		return newGroupedAggregator(a).Do(ctx)
 	}
 
-	if a.params.Filters != nil || len(a.params.SearchVector) > 0 || a.params.Hybrid != nil {
+	isVectorEmpty, err := dto.IsVectorEmpty(a.params.SearchVector)
+	if err != nil {
+		return nil, fmt.Errorf("aggregator: %w", err)
+	}
+
+	if a.params.Filters != nil || !isVectorEmpty || a.params.Hybrid != nil {
 		return newFilteredAggregator(a).Do(ctx)
 	}
 

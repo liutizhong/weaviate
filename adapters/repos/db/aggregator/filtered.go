@@ -15,19 +15,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/liutizhong/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/dto"
 
 	"github.com/pkg/errors"
-	"github.com/liutizhong/weaviate/adapters/repos/db/docid"
-	"github.com/liutizhong/weaviate/adapters/repos/db/inverted"
-	"github.com/liutizhong/weaviate/adapters/repos/db/propertyspecific"
-	"github.com/liutizhong/weaviate/entities/aggregation"
-	"github.com/liutizhong/weaviate/entities/models"
-	"github.com/liutizhong/weaviate/entities/schema"
-	"github.com/liutizhong/weaviate/entities/searchparams"
-	"github.com/liutizhong/weaviate/entities/storobj"
-	"github.com/liutizhong/weaviate/usecases/traverser"
-	"github.com/liutizhong/weaviate/usecases/traverser/hybrid"
+	"github.com/weaviate/weaviate/adapters/repos/db/docid"
+	"github.com/weaviate/weaviate/adapters/repos/db/inverted"
+	"github.com/weaviate/weaviate/adapters/repos/db/propertyspecific"
+	"github.com/weaviate/weaviate/entities/aggregation"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/schema"
+	"github.com/weaviate/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/storobj"
+	"github.com/weaviate/weaviate/usecases/traverser"
+	"github.com/weaviate/weaviate/usecases/traverser/hybrid"
 )
 
 type filteredAggregator struct {
@@ -70,7 +71,7 @@ func (fa *filteredAggregator) hybrid(ctx context.Context) (*aggregation.Result, 
 		return sparse, scores, nil
 	}
 
-	denseSearch := func(vec []float32) ([]*storobj.Object, []float32, error) {
+	denseSearch := func(vec models.Vector) ([]*storobj.Object, []float32, error) {
 		allowList, err := fa.buildAllowList(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -108,7 +109,12 @@ func (fa *filteredAggregator) filtered(ctx context.Context) (*aggregation.Result
 		return nil, err
 	}
 
-	if len(fa.params.SearchVector) > 0 {
+	isVectorEmpty, err := dto.IsVectorEmpty(fa.params.SearchVector)
+	if err != nil {
+		return nil, fmt.Errorf("aggregate filtered: %w", err)
+	}
+
+	if !isVectorEmpty {
 		foundIDs, _, err = fa.vectorSearch(ctx, allowList, fa.params.SearchVector)
 		if err != nil {
 			return nil, err

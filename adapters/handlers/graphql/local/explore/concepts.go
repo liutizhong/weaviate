@@ -15,10 +15,11 @@ import (
 	"fmt"
 
 	"github.com/tailor-inc/graphql"
-	"github.com/liutizhong/weaviate/adapters/handlers/graphql/descriptions"
-	"github.com/liutizhong/weaviate/entities/models"
-	"github.com/liutizhong/weaviate/entities/search"
-	"github.com/liutizhong/weaviate/usecases/auth/authorization"
+	"github.com/weaviate/weaviate/adapters/handlers/graphql/descriptions"
+	"github.com/weaviate/weaviate/adapters/handlers/graphql/local/common_filters"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/search"
+	"github.com/weaviate/weaviate/usecases/auth/authorization"
 )
 
 type ModulesProvider interface {
@@ -141,7 +142,7 @@ func nearVectorFields() graphql.InputObjectConfigFieldMap {
 	return graphql.InputObjectConfigFieldMap{
 		"vector": &graphql.InputObjectFieldConfig{
 			Description: descriptions.Certainty,
-			Type:        graphql.NewNonNull(graphql.NewList(graphql.Float)),
+			Type:        graphql.NewNonNull(common_filters.Vector("ExploreNearVectorInpObj")),
 		},
 		"certainty": &graphql.InputObjectFieldConfig{
 			Description: descriptions.Certainty,

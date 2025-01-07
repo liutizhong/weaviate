@@ -14,12 +14,13 @@ package modulecapabilities
 import (
 	"context"
 
-	"github.com/liutizhong/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/models"
 
 	"github.com/tailor-inc/graphql"
 	"github.com/tailor-inc/graphql/language/ast"
-	"github.com/liutizhong/weaviate/entities/moduletools"
-	"github.com/liutizhong/weaviate/entities/search"
+	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/weaviate/weaviate/entities/search"
 )
 
 // GraphQLFieldFn generates graphql field based on classname
@@ -30,8 +31,8 @@ type ExtractAdditionalFn = func(param []*ast.Argument, class *models.Class) inte
 
 // AdditionalPropertyWithSearchVector defines additional property params
 // with the ability to pass search vector
-type AdditionalPropertyWithSearchVector interface {
-	SetSearchVector(vector []float32)
+type AdditionalPropertyWithSearchVector[T dto.Embedding] interface {
+	SetSearchVector(vector T)
 }
 
 // AdditionalPropertyFn defines interface for additional property

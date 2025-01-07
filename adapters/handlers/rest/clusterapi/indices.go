@@ -22,23 +22,24 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/models"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	reposdb "github.com/liutizhong/weaviate/adapters/repos/db"
-	"github.com/liutizhong/weaviate/entities/additional"
-	"github.com/liutizhong/weaviate/entities/aggregation"
-	enterrors "github.com/liutizhong/weaviate/entities/errors"
-	"github.com/liutizhong/weaviate/entities/filters"
-	entschema "github.com/liutizhong/weaviate/entities/schema"
-	"github.com/liutizhong/weaviate/entities/search"
-	"github.com/liutizhong/weaviate/entities/searchparams"
-	"github.com/liutizhong/weaviate/entities/storobj"
-	"github.com/liutizhong/weaviate/usecases/objects"
-	"github.com/liutizhong/weaviate/usecases/replica"
-	"github.com/liutizhong/weaviate/usecases/replica/hashtree"
+	reposdb "github.com/weaviate/weaviate/adapters/repos/db"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/aggregation"
+	enterrors "github.com/weaviate/weaviate/entities/errors"
+	"github.com/weaviate/weaviate/entities/filters"
+	entschema "github.com/weaviate/weaviate/entities/schema"
+	"github.com/weaviate/weaviate/entities/search"
+	"github.com/weaviate/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/storobj"
+	"github.com/weaviate/weaviate/usecases/objects"
+	"github.com/weaviate/weaviate/usecases/replica"
+	"github.com/weaviate/weaviate/usecases/replica/hashtree"
 )
 
 type indices struct {
@@ -125,7 +126,7 @@ type shards interface {
 	MultiGetObjects(ctx context.Context, indexName, shardName string,
 		id []strfmt.UUID) ([]*storobj.Object, error)
 	Search(ctx context.Context, indexName, shardName string,
-		vectors [][]float32, targetVectors []string, distance float32, limit int,
+		vectors []models.Vector, targetVectors []string, distance float32, limit int,
 		filters *filters.LocalFilter, keywordRanking *searchparams.KeywordRanking,
 		sort []filters.Sort, cursor *filters.Cursor, groupBy *searchparams.GroupBy,
 		additional additional.Properties, targetCombination *dto.TargetCombination, properties []string,

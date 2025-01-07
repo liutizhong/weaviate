@@ -20,10 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/liutizhong/weaviate/entities/dto"
-	"github.com/liutizhong/weaviate/entities/filters"
-	"github.com/liutizhong/weaviate/entities/search"
-	"github.com/liutizhong/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/filters"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/search"
+	"github.com/weaviate/weaviate/entities/searchparams"
 )
 
 func Test_Explorer_GetClass_WithSort(t *testing.T) {
@@ -327,7 +328,7 @@ func Test_Explorer_GetClass_WithSort(t *testing.T) {
 			params: dto.GetParams{
 				ClassName: "ClassOne",
 				NearVector: &searchparams.NearVector{
-					Vectors: [][]float32{{0.8, 0.2, 0.7}},
+					Vectors: []models.Vector{[]float32{0.8, 0.2, 0.7}},
 				},
 				Sort: []filters.Sort{
 					{Path: []string{"text_prop"}, Order: "asc"},

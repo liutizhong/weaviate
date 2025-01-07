@@ -16,13 +16,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/liutizhong/weaviate/usecases/auth/authorization"
+	"github.com/weaviate/weaviate/usecases/auth/authorization"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/liutizhong/weaviate/entities/additional"
-	"github.com/liutizhong/weaviate/entities/classcache"
-	"github.com/liutizhong/weaviate/entities/models"
-	"github.com/liutizhong/weaviate/entities/schema/crossref"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/classcache"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/schema/crossref"
 )
 
 // DeleteReferenceInput represents required inputs to delete a reference from an existing object.
@@ -128,7 +129,11 @@ func (m *Manager) DeleteObjectReference(ctx context.Context, principal *models.P
 		}
 	}
 
-	err = m.vectorRepo.PutObject(ctx, obj, res.Vector, res.Vectors, res.MultiVectors, repl, schemaVersion)
+	vectors, multiVectors, err := dto.GetVectors(res.Vectors)
+	if err != nil {
+		return &Error{"repo.putobject", StatusInternalServerError, fmt.Errorf("cannot get vectors: %w", err)}
+	}
+	err = m.vectorRepo.PutObject(ctx, obj, res.Vector, vectors, multiVectors, repl, schemaVersion)
 	if err != nil {
 		return &Error{"repo.putobject", StatusInternalServerError, err}
 	}

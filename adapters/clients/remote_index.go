@@ -23,20 +23,21 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/models"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
-	"github.com/liutizhong/weaviate/adapters/handlers/rest/clusterapi"
-	"github.com/liutizhong/weaviate/entities/additional"
-	"github.com/liutizhong/weaviate/entities/aggregation"
-	"github.com/liutizhong/weaviate/entities/filters"
-	"github.com/liutizhong/weaviate/entities/search"
-	"github.com/liutizhong/weaviate/entities/searchparams"
-	"github.com/liutizhong/weaviate/entities/storobj"
-	"github.com/liutizhong/weaviate/usecases/objects"
-	"github.com/liutizhong/weaviate/usecases/replica"
-	"github.com/liutizhong/weaviate/usecases/scaler"
+	"github.com/weaviate/weaviate/adapters/handlers/rest/clusterapi"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/aggregation"
+	"github.com/weaviate/weaviate/entities/filters"
+	"github.com/weaviate/weaviate/entities/search"
+	"github.com/weaviate/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/storobj"
+	"github.com/weaviate/weaviate/usecases/objects"
+	"github.com/weaviate/weaviate/usecases/replica"
+	"github.com/weaviate/weaviate/usecases/scaler"
 )
 
 type RemoteIndex struct {
@@ -397,7 +398,7 @@ func (c *RemoteIndex) MultiGetObjects(ctx context.Context, hostName, indexName,
 }
 
 func (c *RemoteIndex) SearchShard(ctx context.Context, host, index, shard string,
-	vector [][]float32,
+	vector []models.Vector,
 	targetVector []string,
 	limit int,
 	filters *filters.LocalFilter,

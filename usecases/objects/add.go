@@ -20,13 +20,14 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/google/uuid"
-	"github.com/liutizhong/weaviate/entities/additional"
-	"github.com/liutizhong/weaviate/entities/classcache"
-	enterrors "github.com/liutizhong/weaviate/entities/errors"
-	"github.com/liutizhong/weaviate/entities/models"
-	"github.com/liutizhong/weaviate/usecases/auth/authorization"
-	"github.com/liutizhong/weaviate/usecases/memwatch"
-	"github.com/liutizhong/weaviate/usecases/objects/validation"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/classcache"
+	"github.com/weaviate/weaviate/entities/dto"
+	enterrors "github.com/weaviate/weaviate/entities/errors"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/usecases/auth/authorization"
+	"github.com/weaviate/weaviate/usecases/memwatch"
+	"github.com/weaviate/weaviate/usecases/objects/validation"
 )
 
 // AddObject Class Instance to the connected DB.
@@ -111,7 +112,11 @@ func (m *Manager) addObjectToConnectorAndSchema(ctx context.Context, principal *
 	if err := m.schemaManager.WaitForUpdate(ctx, schemaVersion); err != nil {
 		return nil, fmt.Errorf("error waiting for local schema to catch up to version %d: %w", schemaVersion, err)
 	}
-	err = m.vectorRepo.PutObject(ctx, object, object.Vector, object.Vectors, object.MultiVectors, repl, schemaVersion)
+	vectors, multiVectors, err := dto.GetVectors(object.Vectors)
+	if err != nil {
+		return nil, fmt.Errorf("put object: cannot get vectors: %w", err)
+	}
+	err = m.vectorRepo.PutObject(ctx, object, object.Vector, vectors, multiVectors, repl, schemaVersion)
 	if err != nil {
 		return nil, fmt.Errorf("put object: %w", err)
 	}
@@ -134,7 +139,7 @@ func (m *Manager) checkIDOrAssignNew(ctx context.Context, principal *models.Prin
 	// to disk as uppercase, when provided that way. Here we
 	// ensure they are lowercase on disk as well, so things
 	// like filtering are not affected.
-	// See: https://github.com/liutizhong/weaviate/issues/2647
+	// See: https://github.com/weaviate/weaviate/issues/2647
 	validatedID := strfmt.UUID(strings.ToLower(id.String()))
 
 	exists, err := m.vectorRepo.Exists(ctx, className, validatedID, repl, tenant)

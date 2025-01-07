@@ -17,16 +17,17 @@ import (
 	"fmt"
 	"runtime"
 
-	enterrors "github.com/liutizhong/weaviate/entities/errors"
+	"github.com/weaviate/weaviate/entities/dto"
+	enterrors "github.com/weaviate/weaviate/entities/errors"
 
 	"github.com/sirupsen/logrus"
-	"github.com/liutizhong/weaviate/entities/models"
-	"github.com/liutizhong/weaviate/entities/modulecapabilities"
-	"github.com/liutizhong/weaviate/entities/moduletools"
-	"github.com/liutizhong/weaviate/entities/vectorindex/dynamic"
-	"github.com/liutizhong/weaviate/entities/vectorindex/flat"
-	"github.com/liutizhong/weaviate/entities/vectorindex/hnsw"
-	"github.com/liutizhong/weaviate/usecases/config"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/modulecapabilities"
+	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/weaviate/weaviate/entities/vectorindex/dynamic"
+	"github.com/weaviate/weaviate/entities/vectorindex/flat"
+	"github.com/weaviate/weaviate/entities/vectorindex/hnsw"
+	"github.com/weaviate/weaviate/usecases/config"
 )
 
 var _NUMCPU = runtime.NumCPU()
@@ -199,7 +200,10 @@ func (p *Provider) batchUpdateVector(ctx context.Context, objects []*models.Obje
 				skipRevectorization[i] = true
 				continue
 			}
-			reVectorize, addProps, vector := reVectorize(ctx, cfg, vectorizer, obj, class, nil, targetVector, findObjectFn)
+			reVectorize, addProps, vector, err := reVectorize(ctx, cfg, vectorizer, obj, class, nil, targetVector, findObjectFn)
+			if err != nil {
+				return nil, fmt.Errorf("cannot vectorize class %q: %w", class.Class, err)
+			}
 			if !reVectorize {
 				skipRevectorization[i] = true
 				p.lockGuard(func() {
@@ -235,7 +239,10 @@ func (p *Provider) batchUpdateVector(ctx context.Context, objects []*models.Obje
 				skipRevectorization[i] = true
 				continue
 			}
-			reVectorize, addProps, multiVector := reVectorizeMulti(ctx, cfg, vectorizer, obj, class, nil, targetVector, findObjectFn)
+			reVectorize, addProps, multiVector, err := reVectorizeMulti(ctx, cfg, vectorizer, obj, class, nil, targetVector, findObjectFn)
+			if err != nil {
+				return nil, fmt.Errorf("cannot vectorize class %q: %w", class.Class, err)
+			}
 			if !reVectorize {
 				skipRevectorization[i] = true
 				p.lockGuard(func() {
@@ -354,15 +361,12 @@ func (p *Provider) addVectorToObject(object *models.Object,
 		object.Vector = vector
 		return
 	}
+	if object.Vectors == nil {
+		object.Vectors = models.Vectors{}
+	}
 	if multiVector != nil {
-		if object.MultiVectors == nil {
-			object.MultiVectors = models.MultiVectors{}
-		}
-		object.MultiVectors[cfg.TargetVector()] = multiVector
+		object.Vectors[cfg.TargetVector()] = multiVector
 	} else {
-		if object.Vectors == nil {
-			object.Vectors = models.Vectors{}
-		}
 		object.Vectors[cfg.TargetVector()] = vector
 	}
 }
@@ -407,7 +411,10 @@ func (p *Provider) vectorize(ctx context.Context, object *models.Object, class *
 					}
 				}
 			}
-			needsRevectorization, additionalProperties, vector := reVectorize(ctx, cfg, vectorizer, object, class, targetProperties, targetVector, findObjectFn)
+			needsRevectorization, additionalProperties, vector, err := reVectorize(ctx, cfg, vectorizer, object, class, targetProperties, targetVector, findObjectFn)
+			if err != nil {
+				return fmt.Errorf("cannot revectorize class %q: %w", object.Class, err)
+			}
 			if needsRevectorization {
 				var err error
 				vector, additionalProperties, err = vectorizer.VectorizeObject(ctx, object, cfg)
@@ -432,7 +439,10 @@ func (p *Provider) vectorize(ctx context.Context, object *models.Object, class *
 					}
 				}
 			}
-			needsRevectorization, additionalProperties, multiVector := reVectorizeMulti(ctx, cfg, vectorizer, object, class, targetProperties, targetVector, findObjectFn)
+			needsRevectorization, additionalProperties, multiVector, err := reVectorizeMulti(ctx, cfg, vectorizer, object, class, targetProperties, targetVector, findObjectFn)
+			if err != nil {
+				return fmt.Errorf("cannot revectorize class %q: %w", object.Class, err)
+			}
 			if needsRevectorization {
 				var err error
 				multiVector, additionalProperties, err = vectorizer.VectorizeObject(ctx, object, cfg)
@@ -467,7 +477,8 @@ func (p *Provider) shouldVectorizeObject(object *models.Object, cfg moduletools.
 	targetVectorExists := false
 	p.lockGuard(func() {
 		vec, ok := object.Vectors[cfg.TargetVector()]
-		targetVectorExists = ok && len(vec) > 0
+		isVectorEmpty, _ := dto.IsVectorEmpty(vec)
+		targetVectorExists = ok && !isVectorEmpty
 	})
 	return !targetVectorExists
 }
@@ -483,7 +494,11 @@ func (p *Provider) shouldVectorize(object *models.Object, class *models.Class,
 	vectorizer := p.getVectorizer(class, targetVector)
 	if vectorizer == config.VectorizerModuleNone {
 		vector := p.getVector(object, targetVector)
-		if hnswConfig.Skip && len(vector) > 0 {
+		isEmpty, err := dto.IsVectorEmpty(vector)
+		if err != nil {
+			return false, fmt.Errorf("should vectorize: is vector empty: %w", err)
+		}
+		if hnswConfig.Skip && !isEmpty {
 			logger.WithField("className", class.Class).
 				Warningf(warningSkipVectorProvided)
 		}
@@ -512,7 +527,7 @@ func (p *Provider) getVectorizer(class *models.Class, targetVector string) strin
 	return class.Vectorizer
 }
 
-func (p *Provider) getVector(object *models.Object, targetVector string) []float32 {
+func (p *Provider) getVector(object *models.Object, targetVector string) models.Vector {
 	p.vectorsLock.Lock()
 	defer p.vectorsLock.Unlock()
 	if targetVector != "" {

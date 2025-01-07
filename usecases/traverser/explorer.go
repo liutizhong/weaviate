@@ -16,29 +16,30 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/liutizhong/weaviate/entities/schema/configvalidation"
+	"github.com/weaviate/weaviate/entities/models"
+	"github.com/weaviate/weaviate/entities/schema/configvalidation"
 
-	enterrors "github.com/liutizhong/weaviate/entities/errors"
+	enterrors "github.com/weaviate/weaviate/entities/errors"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/liutizhong/weaviate/entities/additional"
-	"github.com/liutizhong/weaviate/entities/autocut"
-	"github.com/liutizhong/weaviate/entities/dto"
-	"github.com/liutizhong/weaviate/entities/filters"
-	"github.com/liutizhong/weaviate/entities/inverted"
-	"github.com/liutizhong/weaviate/entities/modulecapabilities"
-	"github.com/liutizhong/weaviate/entities/schema"
-	"github.com/liutizhong/weaviate/entities/schema/crossref"
-	"github.com/liutizhong/weaviate/entities/search"
-	"github.com/liutizhong/weaviate/entities/searchparams"
-	"github.com/liutizhong/weaviate/entities/storobj"
-	"github.com/liutizhong/weaviate/usecases/config"
-	"github.com/liutizhong/weaviate/usecases/floatcomp"
-	"github.com/liutizhong/weaviate/usecases/modulecomponents/generictypes"
-	uc "github.com/liutizhong/weaviate/usecases/schema"
-	"github.com/liutizhong/weaviate/usecases/traverser/grouper"
+	"github.com/weaviate/weaviate/entities/additional"
+	"github.com/weaviate/weaviate/entities/autocut"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/filters"
+	"github.com/weaviate/weaviate/entities/inverted"
+	"github.com/weaviate/weaviate/entities/modulecapabilities"
+	"github.com/weaviate/weaviate/entities/schema"
+	"github.com/weaviate/weaviate/entities/schema/crossref"
+	"github.com/weaviate/weaviate/entities/search"
+	"github.com/weaviate/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/storobj"
+	"github.com/weaviate/weaviate/usecases/config"
+	"github.com/weaviate/weaviate/usecases/floatcomp"
+	"github.com/weaviate/weaviate/usecases/modulecomponents/generictypes"
+	uc "github.com/weaviate/weaviate/usecases/schema"
+	"github.com/weaviate/weaviate/usecases/traverser/grouper"
 )
 
 var _NUMCPU = runtime.GOMAXPROCS(0)
@@ -64,6 +65,7 @@ type explorerMetrics interface {
 type ModulesProvider interface {
 	ValidateSearchParam(name string, value interface{}, className string) error
 	CrossClassValidateSearchParam(name string, value interface{}) error
+	IsTargetVectorMultiVector(className, targetVector string) (bool, error)
 	VectorFromSearchParam(ctx context.Context, className, targetVector, tenant, param string, params interface{},
 		findVectorFn modulecapabilities.FindVectorFn[[]float32]) ([]float32, error)
 	MultiVectorFromSearchParam(ctx context.Context, className, targetVector, tenant, param string, params interface{},
@@ -74,7 +76,7 @@ type ModulesProvider interface {
 	MultiCrossClassVectorFromSearchParam(ctx context.Context, param string,
 		params interface{}, findVectorFn modulecapabilities.FindVectorFn[[][]float32]) ([][]float32, string, error)
 	GetExploreAdditionalExtend(ctx context.Context, in []search.Result,
-		moduleParams map[string]interface{}, searchVector []float32,
+		moduleParams map[string]interface{}, searchVector models.Vector,
 		argumentModuleParams map[string]interface{}) ([]search.Result, error)
 	ListExploreAdditionalExtend(ctx context.Context, in []search.Result,
 		moduleParams map[string]interface{},
@@ -88,10 +90,10 @@ type objectsSearcher interface {
 
 	// GraphQL Get{} queries
 	Search(ctx context.Context, params dto.GetParams) ([]search.Result, error)
-	VectorSearch(ctx context.Context, params dto.GetParams, targetVectors []string, searchVectors [][]float32) ([]search.Result, error)
+	VectorSearch(ctx context.Context, params dto.GetParams, targetVectors []string, searchVectors []models.Vector) ([]search.Result, error)
 
 	// GraphQL Explore{} queries
-	CrossClassVectorSearch(ctx context.Context, vector []float32, targetVector string, offset, limit int,
+	CrossClassVectorSearch(ctx context.Context, vector models.Vector, targetVector string, offset, limit int,
 		filters *filters.LocalFilter) ([]search.Result, error)
 
 	// Near-params searcher
@@ -211,7 +213,7 @@ func (e *Explorer) getClassKeywordBased(ctx context.Context, params dto.GetParam
 
 func (e *Explorer) getClassVectorSearch(ctx context.Context,
 	params dto.GetParams,
-) ([]search.Result, []float32, error) {
+) ([]search.Result, models.Vector, error) {
 	targetVectors, err := e.targetFromParams(ctx, params)
 	if err != nil {
 		return nil, nil, errors.Errorf("explorer: get class: vectorize params: %v", err)
@@ -234,9 +236,9 @@ func (e *Explorer) getClassVectorSearch(ctx context.Context,
 	return res, []float32{}, nil
 }
 
-func (e *Explorer) searchForTargets(ctx context.Context, params dto.GetParams, targetVectors []string, searchVectorParams *searchparams.NearVector) ([]search.Result, [][]float32, error) {
+func (e *Explorer) searchForTargets(ctx context.Context, params dto.GetParams, targetVectors []string, searchVectorParams *searchparams.NearVector) ([]search.Result, []models.Vector, error) {
 	var err error
-	searchVectors := make([][]float32, len(targetVectors))
+	searchVectors := make([]models.Vector, len(targetVectors))
 	eg := enterrors.NewErrorGroupWrapper(e.logger)
 	eg.SetLimit(2 * _NUMCPU)
 	for i := range targetVectors {
@@ -355,7 +357,7 @@ func (e *Explorer) getClassList(ctx context.Context,
 	// result payload. if we skip this step, the grouper will attempt
 	// to compute the distance with a `nil` vector, resulting in NaN.
 	// this was the cause of [github issue 1958]
-	// (https://github.com/liutizhong/weaviate/issues/1958)
+	// (https://github.com/weaviate/weaviate/issues/1958)
 	if params.Group != nil && (params.Filters != nil || params.Sort != nil) {
 		params.AdditionalProperties.Vector = true
 	}
@@ -402,7 +404,7 @@ func (e *Explorer) getClassList(ctx context.Context,
 	return res, nil
 }
 
-func (e *Explorer) searchResultsToGetResponse(ctx context.Context, input []search.Result, searchVector []float32, params dto.GetParams) ([]interface{}, error) {
+func (e *Explorer) searchResultsToGetResponse(ctx context.Context, input []search.Result, searchVector models.Vector, params dto.GetParams) ([]interface{}, error) {
 	output := make([]interface{}, 0, len(input))
 	results, err := e.searchResultsToGetResponseWithType(ctx, input, searchVector, params)
 	if err != nil {
@@ -423,7 +425,7 @@ func (e *Explorer) searchResultsToGetResponse(ctx context.Context, input []searc
 	return output, nil
 }
 
-func (e *Explorer) searchResultsToGetResponseWithType(ctx context.Context, input []search.Result, searchVector []float32, params dto.GetParams) ([]search.Result, error) {
+func (e *Explorer) searchResultsToGetResponseWithType(ctx context.Context, input []search.Result, searchVector models.Vector, params dto.GetParams) ([]search.Result, error) {
 	var output []search.Result
 	replEnabled, err := e.replicationEnabled(params)
 	if err != nil {
@@ -494,7 +496,7 @@ func (e *Explorer) searchResultsToGetResponseWithType(ctx context.Context, input
 		}
 
 		if len(params.AdditionalProperties.Vectors) > 0 {
-			vectors := make(map[string][]float32)
+			vectors := make(map[string]models.Vector)
 			for _, targetVector := range params.AdditionalProperties.Vectors {
 				vectors[targetVector] = res.Vectors[targetVector]
 			}
@@ -674,13 +676,13 @@ func (e *Explorer) targetFromParams(ctx context.Context,
 
 func (e *Explorer) vectorFromParamsForTarget(ctx context.Context,
 	nv *searchparams.NearVector, no *searchparams.NearObject, moduleParams map[string]interface{}, className, tenant, target string, index int,
-) ([]float32, error) {
+) (models.Vector, error) {
 	return e.nearParamsVector.vectorFromParams(ctx, nv, no, moduleParams, className, tenant, target, index)
 }
 
 func (e *Explorer) vectorFromExploreParams(ctx context.Context,
 	params ExploreParams,
-) ([]float32, string, error) {
+) (models.Vector, string, error) {
 	err := e.nearParamsVector.validateNearParams(params.NearVector, params.NearObject, params.ModuleParams)
 	if err != nil {
 		return nil, "", err

@@ -14,9 +14,10 @@ package common_filters
 import (
 	"fmt"
 
-	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/weaviate/weaviate/entities/models"
 
-	"github.com/liutizhong/weaviate/entities/searchparams"
+	"github.com/weaviate/weaviate/entities/searchparams"
 )
 
 const DefaultAlpha = float64(0.75)
@@ -138,12 +139,20 @@ func ExtractHybridSearch(source map[string]interface{}, explainScore bool) (*sea
 	} else {
 		args.FusionAlgorithm = HybridFusionDefault
 	}
-	if _, ok := source["vector"]; ok {
-		vector := source["vector"].([]interface{})
-		args.Vector = make([]float32, len(vector))
+
+	switch vector := source["vector"].(type) {
+	case nil:
+		args.Vector = nil
+	case []float32, [][]float32, models.C11yVector:
+		args.Vector = vector
+	case []interface{}:
+		v := make([]float32, len(vector))
 		for i, value := range vector {
-			args.Vector[i] = float32(value.(float64))
+			v[i] = float32(value.(float64))
 		}
+		args.Vector = v
+	default:
+		return nil, nil, fmt.Errorf("cannot parse vector: unrecognized vector type: %T", source["vector"])
 	}
 
 	if _, ok := source["properties"]; ok {
