@@ -15,8 +15,8 @@ import (
 	"context"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/weaviate/weaviate/entities/dto"
-	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/liutizhong/weaviate/entities/moduletools"
 )
 
 // FindVectorFn method for getting a vector of given object by its ID

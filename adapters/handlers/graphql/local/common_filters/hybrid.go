@@ -14,10 +14,10 @@ package common_filters
 import (
 	"fmt"
 
-	"github.com/weaviate/weaviate/entities/dto"
-	"github.com/weaviate/weaviate/entities/models"
+	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/liutizhong/weaviate/entities/models"
 
-	"github.com/weaviate/weaviate/entities/searchparams"
+	"github.com/liutizhong/weaviate/entities/searchparams"
 )
 
 const DefaultAlpha = float64(0.75)

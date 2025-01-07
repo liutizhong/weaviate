@@ -15,9 +15,9 @@ import (
 	"context"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/weaviate/weaviate/entities/dto"
-	"github.com/weaviate/weaviate/entities/modulecapabilities"
-	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/liutizhong/weaviate/entities/modulecapabilities"
+	"github.com/liutizhong/weaviate/entities/moduletools"
 )
 
 type findVectorFn = func(ctx context.Context,

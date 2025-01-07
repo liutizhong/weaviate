@@ -15,8 +15,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/weaviate/weaviate/entities/dto"
-	"github.com/weaviate/weaviate/entities/moduletools"
+	"github.com/liutizhong/weaviate/entities/dto"
+	"github.com/liutizhong/weaviate/entities/moduletools"
 )
 
 type ModuleType string

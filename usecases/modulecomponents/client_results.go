@@ -14,7 +14,7 @@ package modulecomponents
 import (
 	"time"
 
-	"github.com/weaviate/weaviate/entities/dto"
+	"github.com/liutizhong/weaviate/entities/dto"
 )
 
 type RateLimits struct {

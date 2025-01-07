@@ -17,17 +17,17 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/weaviate/weaviate/entities/dto"
-	enterrors "github.com/weaviate/weaviate/entities/errors"
+	"github.com/liutizhong/weaviate/entities/dto"
+	enterrors "github.com/liutizhong/weaviate/entities/errors"
 
 	"github.com/sirupsen/logrus"
-	"github.com/weaviate/weaviate/entities/models"
-	"github.com/weaviate/weaviate/entities/modulecapabilities"
-	"github.com/weaviate/weaviate/entities/moduletools"
-	"github.com/weaviate/weaviate/entities/vectorindex/dynamic"
-	"github.com/weaviate/weaviate/entities/vectorindex/flat"
-	"github.com/weaviate/weaviate/entities/vectorindex/hnsw"
-	"github.com/weaviate/weaviate/usecases/config"
+	"github.com/liutizhong/weaviate/entities/models"
+	"github.com/liutizhong/weaviate/entities/modulecapabilities"
+	"github.com/liutizhong/weaviate/entities/moduletools"
+	"github.com/liutizhong/weaviate/entities/vectorindex/dynamic"
+	"github.com/liutizhong/weaviate/entities/vectorindex/flat"
+	"github.com/liutizhong/weaviate/entities/vectorindex/hnsw"
+	"github.com/liutizhong/weaviate/usecases/config"
 )
 
 var _NUMCPU = runtime.NumCPU()

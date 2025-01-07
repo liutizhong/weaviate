@@ -11,7 +11,7 @@
 
 package vectorizer
 
-import "github.com/weaviate/weaviate/entities/dto"
+import "github.com/liutizhong/weaviate/entities/dto"
 
 // CombineVectors combines all of the vector into sum of their parts
 func CombineVectors[T dto.Embedding](vectors []T) T {
