@@ -14,7 +14,6 @@ package vectorizer
 import (
 	"fmt"
 	"strings"
-	"os"
 
 	"github.com/pkg/errors"
 
@@ -93,7 +92,7 @@ func (ic *classSettings) Validate(class *models.Class) error {
 	if isBedrock(service) {
 		model := ic.Model()
 		if model == "" {
-			model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
+			model = "cohere.embed-multilingual-v3" //:= os.Getenv("ENV_AWS_BEDROCK_MODELID")
 		}
 		if model == "" || !ic.validatAvailableAWSSetting(model, availableAWSBedrockModels) {
 			errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available models are: %v", modelProperty, availableAWSBedrockModels))

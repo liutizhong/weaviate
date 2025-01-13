@@ -13,7 +13,6 @@ package vectorizer
 
 import (
 	"context"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/liutizhong/weaviate/entities/moduletools"
@@ -26,24 +25,24 @@ func (v *Vectorizer) Texts(ctx context.Context, inputs []string,
 ) ([]float32, error) {
 	settings := NewClassSettings(cfg)
 	vectors := make([][]float32, len(inputs))
-	service :=settings.Service()
-	if service == "" {
-		service := os.Getenv("ENV_AWS_BEDROCK_SERVICE")
-	}
-	region :=settings.Region()
-	if region=="" {
-		region := os.Getenv("ENV_AWS_BEDROCK_REGION")
-	}
-	model := settings.Model()
-	if model=="" {
-		model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
-	}
+	// service :=settings.Service()
+	// if service == "" {
+	// 	service := os.Getenv("ENV_AWS_BEDROCK_SERVICE")
+	// }
+	// region :=settings.Region()
+	// if region=="" {
+	// 	region := os.Getenv("ENV_AWS_BEDROCK_REGION")
+	// }
+	// model := settings.Model()
+	// if model=="" {
+	// 	model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
+	// }
 	
 	for i := range inputs {
 		res, err := v.client.VectorizeQuery(ctx, []string{inputs[i]}, ent.VectorizationConfig{
-			Service:       service, //"bedrock", //settings.Service(),
-			Region:        region,  //"us-east-1",//settings.Region(),
-			Model:         model, //"cohere.embed-multilingual-v3",//settings.Model(),
+			Service:       "bedrock", //settings.Service(),
+			Region:        "us-east-1",//settings.Region(),
+			Model:         "cohere.embed-multilingual-v3",//settings.Model(),
 			Endpoint:      settings.Endpoint(),
 			TargetModel:   settings.TargetModel(),
 			TargetVariant: settings.TargetVariant(),
