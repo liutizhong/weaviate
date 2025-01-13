@@ -54,6 +54,36 @@ func testColBERT(host string) func(t *testing.T) {
 				},
 			}
 
+			performNearVector := func(t *testing.T, client *wvt.Client, className string) {
+				nearVector := client.GraphQL().NearVectorArgBuilder().
+					WithVector([][]float32{{-0.000001, -0.000001}, {-0.000001, -0.000001}, {-0.000001, -0.000001}}).
+					WithTargetVectors(byoc)
+				resp, err := client.GraphQL().Get().
+					WithClassName(className).
+					WithNearVector(nearVector).
+					WithFields(_additional).
+					Do(ctx)
+				require.NoError(t, err)
+				ids := acceptance_with_go_client.GetIds(t, resp, className)
+				require.NotEmpty(t, ids)
+				assert.Len(t, ids, len(objects))
+			}
+
+			performNearObject := func(t *testing.T, client *wvt.Client, className string) {
+				nearObject := client.GraphQL().NearObjectArgBuilder().
+					WithID(objects[0].ID).
+					WithTargetVectors(byoc)
+				resp, err := client.GraphQL().Get().
+					WithClassName(className).
+					WithNearObject(nearObject).
+					WithFields(_additional).
+					Do(ctx)
+				require.NoError(t, err)
+				ids := acceptance_with_go_client.GetIds(t, resp, className)
+				require.NotEmpty(t, ids)
+				assert.Len(t, ids, len(objects))
+			}
+
 			t.Run("create schema", func(t *testing.T) {
 				class := fixtures.BringYourOwnColBERTClass(className)
 				err := client.Schema().ClassCreator().WithClass(class).Do(ctx)
@@ -86,6 +116,15 @@ func testColBERT(host string) func(t *testing.T) {
 				}
 			})
 
+			t.Run("checks objects indexed", func(t *testing.T) {
+				testAllObjectsIndexed(t, client, className)
+			})
+
+			t.Run("vector search after insert", func(t *testing.T) {
+				performNearVector(t, client, className)
+				performNearObject(t, client, className)
+			})
+
 			t.Run("check existence", func(t *testing.T) {
 				for _, obj := range objects {
 					exists, err := client.Data().Checker().
@@ -109,7 +148,6 @@ func testColBERT(host string) func(t *testing.T) {
 			})
 
 			t.Run("GraphQL get object with vector", func(t *testing.T) {
-
 				for _, o := range objects {
 					resp, err := client.GraphQL().Get().
 						WithClassName(className).
@@ -185,6 +223,34 @@ func testColBERT(host string) func(t *testing.T) {
 						assert.Equal(t, updateVectors[byoc], vectors[byoc])
 					})
 				}
+			})
+
+			t.Run("checks objects indexed", func(t *testing.T) {
+				testAllObjectsIndexed(t, client, className)
+			})
+
+			t.Run("vector search after partial update", func(t *testing.T) {
+				performNearVector(t, client, className)
+				performNearObject(t, client, className)
+			})
+
+			t.Run("update all objects", func(t *testing.T) {
+				for _, obj := range objects {
+					err = client.Data().Updater().
+						WithClassName(className).WithID(obj.ID).WithVectors(models.Vectors{
+						byoc: obj.Vector,
+					}).Do(ctx)
+					require.NoError(t, err)
+				}
+			})
+
+			t.Run("checks objects indexed", func(t *testing.T) {
+				testAllObjectsIndexed(t, client, className)
+			})
+
+			t.Run("vector search after update of all objects", func(t *testing.T) {
+				performNearVector(t, client, className)
+				performNearObject(t, client, className)
 			})
 		})
 
@@ -347,6 +413,41 @@ func testColBERT(host string) func(t *testing.T) {
 				// Weaviate overrides the multivector setting if it finds that someone has enabled
 				// multi vector vectorizer
 				require.NoError(t, err)
+			})
+			t.Run("named vector is colbert vectorizer with empty vector index", func(t *testing.T) {
+				cleanup()
+				class := &models.Class{
+					Class: "NamedVectorVectorizerWithMultiVectorIndex",
+					Properties: []*models.Property{
+						{
+							Name: "name", DataType: []string{schema.DataTypeText.String()},
+						},
+					},
+					VectorConfig: map[string]models.VectorConfig{
+						"colbert": {
+							Vectorizer: map[string]interface{}{
+								"text2colbert-jinaai": map[string]interface{}{
+									"vectorizeClassName": false,
+								},
+							},
+							VectorIndexType: "hnsw",
+						},
+					},
+				}
+				err := client.Schema().ClassCreator().WithClass(class).Do(ctx)
+				// Weaviate overrides the multivector setting if it finds that someone has enabled
+				// multi vector vectorizer
+				require.NoError(t, err)
+				cls, err := client.Schema().ClassGetter().WithClassName(class.Class).Do(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, cls.VectorConfig["colbert"])
+				vc := cls.VectorConfig["colbert"].VectorIndexConfig
+				require.NotNil(t, vc)
+				vsAsMap, ok := vc.(map[string]interface{})
+				require.True(t, ok)
+				mv, ok := vsAsMap["multivector"].(map[string]interface{})
+				require.True(t, ok)
+				assert.True(t, mv["enabled"].(bool))
 			})
 		})
 
