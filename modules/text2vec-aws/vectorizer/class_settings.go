@@ -14,6 +14,7 @@ package vectorizer
 import (
 	"fmt"
 	"strings"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -76,14 +77,14 @@ func (ic *classSettings) Validate(class *models.Class) error {
 
 	service := ic.Service()
 	if service == "" {
-		service = "bedrock"  //os.Getenv("ENV_AWS_BEDROCK_SERVICE")
+		service = os.Getenv("ENV_AWS_BEDROCK_SERVICE") //"bedrock"  //os.Getenv("ENV_AWS_BEDROCK_SERVICE")
 	} 
 	if service == "" || !ic.validatAvailableAWSSetting(service, availableAWSServices) {
 		errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available services are: %v", ServiceProperty, availableAWSServices))
 	}
 	region := ic.Region()
 	if region == "" {
-		region = "us-east-1" //os.Getenv("ENV_AWS_BEDROCK_REGION")
+		region = os.Getenv("ENV_AWS_BEDROCK_REGION") //"us-east-1" //os.Getenv("ENV_AWS_BEDROCK_REGION")
 	}
 	if region == "" {
 		errorMessages = append(errorMessages, fmt.Sprintf("%s cannot be empty", regionProperty))
@@ -92,7 +93,7 @@ func (ic *classSettings) Validate(class *models.Class) error {
 	if isBedrock(service) {
 		model := ic.Model()
 		if model == "" {
-			model = "cohere.embed-multilingual-v3" //:= os.Getenv("ENV_AWS_BEDROCK_MODELID")
+			model = os.Getenv("ENV_AWS_BEDROCK_MODELID") //"cohere.embed-multilingual-v3" //:= os.Getenv("ENV_AWS_BEDROCK_MODELID")
 		}
 		if model == "" || !ic.validatAvailableAWSSetting(model, availableAWSBedrockModels) {
 			errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available models are: %v", modelProperty, availableAWSBedrockModels))
