@@ -43,7 +43,7 @@ func (v *Vectorizer) Texts(ctx context.Context, inputs []string,
 		res, err := v.client.VectorizeQuery(ctx, []string{inputs[i]}, ent.VectorizationConfig{
 			Service:       service, //"bedrock", //settings.Service(),
 			Region:        region,  //"us-east-1",//settings.Region(),
-			Model:         model //"cohere.embed-multilingual-v3",//settings.Model(),
+			Model:         model, //"cohere.embed-multilingual-v3",//settings.Model(),
 			Endpoint:      settings.Endpoint(),
 			TargetModel:   settings.TargetModel(),
 			TargetVariant: settings.TargetVariant(),
