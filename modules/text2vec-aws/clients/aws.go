@@ -406,7 +406,7 @@ func extractHostAndPath(endpointUrl string) (string, string, error) {
 
 func createRequestBody(model string, texts []string, operation operationType) (interface{}, error) {
 	if model == "" {
-		model = "cohere.embed-multilingual-v3" //model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
+		model = os.Getenv("ENV_AWS_BEDROCK_MODELID") //"cohere.embed-multilingual-v3" //model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
 	}
 	//model = "cohere.embed-multilingual-v3"
 	modelParts := strings.Split(model, ".")
