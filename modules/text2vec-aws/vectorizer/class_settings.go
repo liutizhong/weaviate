@@ -76,14 +76,14 @@ func (ic *classSettings) Validate(class *models.Class) error {
 
 	service := ic.Service()
 	if service == "" {
-		service := os.Getenv("ENV_AWS_BEDROCK_SERVICE")
+		service = "bedrock"  //os.Getenv("ENV_AWS_BEDROCK_SERVICE")
 	} 
 	if service == "" || !ic.validatAvailableAWSSetting(service, availableAWSServices) {
 		errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available services are: %v", ServiceProperty, availableAWSServices))
 	}
 	region := ic.Region()
 	if region == "" {
-		region := os.Getenv("ENV_AWS_BEDROCK_REGION")
+		region = "us-east-1" //os.Getenv("ENV_AWS_BEDROCK_REGION")
 	}
 	if region == "" {
 		errorMessages = append(errorMessages, fmt.Sprintf("%s cannot be empty", regionProperty))
