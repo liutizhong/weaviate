@@ -14,6 +14,7 @@ package vectorizer
 import (
 	"fmt"
 	"strings"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -75,16 +76,25 @@ func (ic *classSettings) Validate(class *models.Class) error {
 	}
 
 	service := ic.Service()
+	if service == "" {
+		service := os.Getenv("ENV_AWS_BEDROCK_SERVICE")
+	} 
 	if service == "" || !ic.validatAvailableAWSSetting(service, availableAWSServices) {
 		errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available services are: %v", ServiceProperty, availableAWSServices))
 	}
 	region := ic.Region()
 	if region == "" {
+		region := os.Getenv("ENV_AWS_BEDROCK_REGION")
+	}
+	if region == "" {
 		errorMessages = append(errorMessages, fmt.Sprintf("%s cannot be empty", regionProperty))
 	}
-
+    
 	if isBedrock(service) {
 		model := ic.Model()
+		if model == "" {
+			model := os.Getenv("ENV_AWS_BEDROCK_MODELID")
+		}
 		if model == "" || !ic.validatAvailableAWSSetting(model, availableAWSBedrockModels) {
 			errorMessages = append(errorMessages, fmt.Sprintf("wrong %s, available models are: %v", modelProperty, availableAWSBedrockModels))
 		}
